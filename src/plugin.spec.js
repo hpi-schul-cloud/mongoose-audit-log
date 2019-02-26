@@ -9,11 +9,21 @@ const Audit = require('./model');
 chai.use(dirtyChai);
 
 const setupMongoServer = done => {
-  mongoose.connect('mongodb://localhost:27018/audit-test', { useNewUrlParser: true })
+  mongoose.connect('mongodb://localhost:27017/audit-test', { useNewUrlParser: true })
     .then(() => done()).catch(done);
 };
 
 const createTestModel = (getUser) => {
+  const childSchema = new mongoose.Schema({
+    name: String,
+    number: Number
+  });
+  const entitySchema = new mongoose.Schema({
+    _id: String,
+    id: String,
+    name: String,
+    array: []
+  });
   const testSchema = new mongoose.Schema({
     name: String,
     number: Number,
@@ -22,16 +32,8 @@ const createTestModel = (getUser) => {
       default: Date.now()
     },
     empty: String,
-    child: {
-      name: String,
-      number: Number
-    },
-    entity: {
-      _id: String,
-      id: String,
-      name: String,
-      array: []
-    }
+    child: childSchema,
+    entity: entitySchema
   }, { timestamps: true });
   testSchema.plugin(plugin, getUser);
   return mongoose.model('tests', testSchema);
@@ -76,11 +78,11 @@ describe('audit', function () {
           Audit.find({ itemId: test._id }, function (err, audit) {
             expect(err).to.null();
             expect(audit.length).equal(1);
+
             const entry = audit[0];
-            expect(entry.changes['child.name'].to).equal(expectedName);
-            expect(entry.changes['child.name'].type).equal('Add');
-            expect(entry.changes['child.number'].to).equal(expectedNumber);
-            expect(entry.changes['child.number'].type).equal('Add');
+            expect(entry.changes.child.to.name).equal(expectedName);
+            expect(entry.changes.child.to.number).equal(expectedNumber);
+            expect(entry.changes.child.type).equal('Add');
           })
         );
     });
@@ -100,12 +102,10 @@ describe('audit', function () {
                 expect(err).to.null();
                 expect(audit.length).equal(2);
                 const entry = audit[1];
-                expect(entry.changes['child.name'].from).equal(expectedName);
-                expect(entry.changes['child.name'].to).to.be.undefined();
-                expect(entry.changes['child.name'].type).equal('Delete');
-                expect(entry.changes['child.number'].from).equal(expectedNumber);
-                expect(entry.changes['child.number'].to).to.be.undefined();
-                expect(entry.changes['child.number'].type).equal('Delete');
+                expect(entry.changes.child.to).to.be.undefined();
+                expect(entry.changes.child.from.name).equal(expectedName);
+                expect(entry.changes.child.from.number).equal(expectedNumber);
+                expect(entry.changes.child.type).equal('Delete');
               })
             );
         });
@@ -122,10 +122,9 @@ describe('audit', function () {
             expect(err).to.null();
             expect(audit.length).equal(1);
             const entry = audit[0];
-            expect(entry.changes['entity._id'].to).equal(expectedId);
-            expect(entry.changes['entity.name'].to).equal(expectedName);
-            expect(entry.changes['entity._id'].type).equal('Add');
-            expect(entry.changes['entity.name'].type).equal('Add');
+            expect(entry.changes.entity.to._id).equal(expectedId);
+            expect(entry.changes.entity.to.name).equal(expectedName);
+            expect(entry.changes.entity.type).equal('Add');
           })
         );
     });
@@ -141,10 +140,9 @@ describe('audit', function () {
             expect(err).to.null();
             expect(audit.length).equal(1);
             const entry = audit[0];
-            expect(entry.changes['entity.id'].to).equal(expectedId);
-            expect(entry.changes['entity.name'].to).equal(expectedName);
-            expect(entry.changes['entity.id'].type).equal('Add');
-            expect(entry.changes['entity.name'].type).equal('Add');
+            expect(entry.changes.entity.to.id).equal(expectedId);
+            expect(entry.changes.entity.to.name).equal(expectedName);
+            expect(entry.changes.entity.type).equal('Add');
           })
         );
     });
@@ -198,8 +196,9 @@ describe('audit', function () {
     });
 
     it('should create type "Add" for adding values to arrays', function () {
+      // TODO: Nested objects with arrays in mongoose5
       const expectedValues = ['1', '2', 'X'];
-      test.entity = { array: [].concat(expectedValues) };
+      test.entity = { array:  ['1', '2', 'X'] };
       test.__user = auditUser;
       return test.save()
         .then(() =>
@@ -215,6 +214,7 @@ describe('audit', function () {
     });
 
     it('should create combined type "Edit" for adding values on arrays', function () {
+      // TODO: Nested objects with arrays in mongoose5
       const previousValues = ['1', '2', 'X'];
       const expectedValues = previousValues.concat(['Y']);
       test.entity = { array: [].concat(previousValues) };
@@ -238,6 +238,7 @@ describe('audit', function () {
     });
 
     it('should create combined type "Edit" for removing values on arrays', function () {
+      // TODO: Nested objects with arrays in mongoose5
       const previousValues = ['1', '2', 'X'];
       const expectedValues = ['1', 'X'];
       test.entity = { array: [].concat(previousValues) };
@@ -261,6 +262,7 @@ describe('audit', function () {
     });
 
     it('should create type "Delete" for removing all values from arrays', function () {
+      // TODO: Nested objects with arrays in mongoose5
       const previousValues = ['1', '2', 'X'];
       const expectedValues = [];
       test.entity = { array: [].concat(previousValues) };
