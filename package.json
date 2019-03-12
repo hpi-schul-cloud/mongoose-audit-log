@@ -23,13 +23,13 @@
     "url": "https://github.com/ccanow/mongoose-audit-log"
   },
   "devDependencies": {
-    "chai": "^4.1.2",
+    "chai": "^4.2.0",
     "dirty-chai": "^2.0.1",
-    "mocha": "^5.2.0",
-    "nyc": "^12.0.2"
+    "mocha": "^6.0.2",
+    "nyc": "^13.3.0"
   },
   "dependencies": {
     "deep-diff": "^1.0.2",
-    "mongoose": "^5.4.15"
+    "mongoose": "^5.4.19"
   }
 }
