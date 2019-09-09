@@ -28,13 +28,11 @@ const extractArray = (data, path) => {
 };
 
 const addAuditLogObject = (currentObject, original) => {
-  const user = currentObject.__user || module.exports.getUser();
+  const user = currentObject.__user || module.exports.getUser() || 'unknown';
 
-  if (!user) {
-    throw new Error('User missing in audit log!');
+  if (currentObject.__user) {
+    delete currentObject.__user;
   }
-
-  delete currentObject.__user;
 
   const changes = deepDiff(
     JSON.parse(JSON.stringify(original)),
